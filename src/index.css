@@ -1,0 +1,153 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-display: "Rajdhani", sans-serif;
+  --font-body: "DM Sans", sans-serif;
+  
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+}
+
+:root {
+  --radius: 0.25rem; /* Slight radius for tech feel */
+  
+  /* Light Mode (Fallback, though we will force dark usually for tech) */
+  --background: oklch(0.98 0.01 240);
+  --foreground: oklch(0.15 0.05 240);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0.05 240);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.05 240);
+  --primary: oklch(0.55 0.2 250); /* Electric Blue */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0.02 240);
+  --secondary-foreground: oklch(0.3 0.1 250);
+  --muted: oklch(0.96 0.01 240);
+  --muted-foreground: oklch(0.5 0.05 240);
+  --accent: oklch(0.93 0.03 240);
+  --accent-foreground: oklch(0.3 0.1 250);
+  --destructive: oklch(0.6 0.2 20);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.9 0.02 240);
+  --input: oklch(0.9 0.02 240);
+  --ring: oklch(0.55 0.2 250);
+  
+  /* Chart colors */
+  --chart-1: oklch(0.55 0.2 250);
+  --chart-2: oklch(0.65 0.18 220); /* Cyan-ish */
+  --chart-3: oklch(0.45 0.2 280); /* Purple-ish */
+  --chart-4: oklch(0.7 0.15 200);
+  --chart-5: oklch(0.8 0.1 180);
+}
+
+.dark {
+  /* Dark Mode (Primary Tech Theme) - Blue Base */
+  --background: oklch(0.12 0.03 240); /* Deep Navy Black */
+  --foreground: oklch(0.95 0.02 220); /* Ice White */
+  
+  --card: oklch(0.16 0.04 240); /* Lighter Navy */
+  --card-foreground: oklch(0.95 0.02 220);
+  
+  --popover: oklch(0.14 0.04 240);
+  --popover-foreground: oklch(0.95 0.02 220);
+  
+  --primary: oklch(0.6 0.2 250); /* Electric Blue */
+  --primary-foreground: oklch(1 0 0);
+  
+  --secondary: oklch(0.25 0.05 240);
+  --secondary-foreground: oklch(0.8 0.1 220); /* Cyan Text */
+  
+  --muted: oklch(0.2 0.04 240);
+  --muted-foreground: oklch(0.6 0.05 240); /* Blue Grey */
+  
+  --accent: oklch(0.25 0.08 240); /* Distinct Blue Accent */
+  --accent-foreground: oklch(1 0 0);
+  
+  --destructive: oklch(0.4 0.15 20);
+  --destructive-foreground: oklch(1 0 0);
+  
+  --border: oklch(0.25 0.05 240);
+  --input: oklch(0.25 0.05 240);
+  --ring: oklch(0.6 0.2 250);
+  
+  /* Chart colors (Tech Spectrum) */
+  --chart-1: oklch(0.6 0.2 250); /* Electric Blue */
+  --chart-2: oklch(0.7 0.15 200); /* Cyan */
+  --chart-3: oklch(0.5 0.2 280); /* Purple */
+  --chart-4: oklch(0.8 0.1 180); /* Teal */
+  --chart-5: oklch(0.9 0.05 220); /* Ice */
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-body antialiased selection:bg-primary/30 selection:text-primary-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-wide uppercase;
+  }
+}
+
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 10px var(--color-primary), 0 0 20px var(--color-primary);
+  }
+  .box-glow {
+    box-shadow: 0 0 15px -5px var(--color-primary);
+  }
+  .glass {
+    @apply bg-background/60 backdrop-blur-md border border-white/10;
+  }
+  .tech-border {
+    @apply border border-white/10 relative;
+  }
+  .tech-border::before {
+    content: "";
+    @apply absolute top-0 left-0 w-2 h-2 border-t border-l border-primary opacity-50;
+  }
+  .tech-border::after {
+    content: "";
+    @apply absolute bottom-0 right-0 w-2 h-2 border-b border-r border-primary opacity-50;
+  }
+}
