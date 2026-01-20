@@ -7,7 +7,7 @@ import type { AddressResult, CalculatorState, Coordinates, SolarData } from '../
 import { solarApi } from '../services/api';
 import { geocodingApi } from '../services/api';
 import {
-    MapPin, Search,
+    MapPin, Search, User, Phone,
     Zap, BarChart3, ChevronDown, Loader2, MousePointerClick
 } from 'lucide-react';
 
@@ -31,6 +31,10 @@ const AdvancedCalculator: React.FC = () => {
         phase: '1',
         battery: '5kw'
     });
+
+    // Contact Information
+    const [customerName, setCustomerName] = useState('');
+    const [customerPhone, setCustomerPhone] = useState('');
 
     const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +66,22 @@ const AdvancedCalculator: React.FC = () => {
     };
 
     const handleCalculate = async () => {
+        // Validate contact information
+        if (!customerName.trim()) {
+            alert("Vui lòng nhập họ tên để nhận báo giá.");
+            return;
+        }
+        if (!customerPhone.trim()) {
+            alert("Vui lòng nhập số điện thoại để nhận báo giá.");
+            return;
+        }
+        // Basic phone validation (Vietnamese phone numbers)
+        const phoneRegex = /^(0|\+84)(\s|\.)?((3[2-9])|(5[689])|(7[06-9])|(8[1-689])|(9[0-46-9]))(\d)(\s|\.)?(\d{3})(\s|\.)?(\d{3})$/;
+        if (!phoneRegex.test(customerPhone.replace(/\s/g, ''))) {
+            alert("Số điện thoại không hợp lệ. Vui lòng kiểm tra lại.");
+            return;
+        }
+
         if (!address) {
             alert("Vui lòng nhập địa chỉ để định vị ngôi nhà.");
             return;
@@ -89,6 +109,16 @@ const AdvancedCalculator: React.FC = () => {
         setTimeout(() => {
             resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
+    };
+
+    // Format number with thousands separator
+    const formatCurrency = (value: number): string => {
+        return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    };
+
+    // Parse formatted currency back to number
+    const parseCurrency = (value: string): number => {
+        return Number(value.replace(/,/g, ''));
     };
 
     // Safe initial center calc
@@ -139,24 +169,54 @@ const AdvancedCalculator: React.FC = () => {
 
                         {/* --- FLOATING FORM (Left) --- */}
                         <div className="w-full max-w-md pointer-events-auto">
-                            {/* Title Block */}
+                            {/* Title Block Removed */}
                             <div className="mb-6 drop-shadow-lg">
                                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/60 backdrop-blur border border-amber-500/40 text-amber-500 text-xs font-bold uppercase tracking-wider mb-3 shadow-lg">
                                     <Zap className="w-3 h-3" /> AI Solar Technology
                                 </div>
-                                <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-2 text-shadow-lg">
-                                    Kiến tạo tương lai <br />
-                                    <span className="text-amber-400">Xanh cùng năng lượng mặt trời</span>
-                                </h1>
                             </div>
 
                             {/* The Form Card (Glassmorphism) */}
                             <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl flex flex-col gap-5 relative overflow-hidden group animate-in slide-in-from-left-8 duration-700">
 
-                                {/* 1. Address Search */}
+                                {/* 1. Contact Information */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-300 mb-1.5 uppercase tracking-wide">
+                                            Họ tên <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="relative group/input">
+                                            <input
+                                                type="text"
+                                                value={customerName}
+                                                onChange={(e) => setCustomerName(e.target.value)}
+                                                placeholder="Nguyễn Văn A"
+                                                className="w-full pl-10 pr-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all outline-none text-white placeholder-gray-500 shadow-inner text-sm"
+                                            />
+                                            <User className="absolute left-3 top-3 w-4 h-4 text-gray-400 group-focus-within/input:text-amber-500 transition-colors" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-300 mb-1.5 uppercase tracking-wide">
+                                            Số điện thoại <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="relative group/input">
+                                            <input
+                                                type="tel"
+                                                value={customerPhone}
+                                                onChange={(e) => setCustomerPhone(e.target.value)}
+                                                placeholder="0912345678"
+                                                className="w-full pl-10 pr-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all outline-none text-white placeholder-gray-500 shadow-inner text-sm"
+                                            />
+                                            <Phone className="absolute left-3 top-3 w-4 h-4 text-gray-400 group-focus-within/input:text-amber-500 transition-colors" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 2. Address Search */}
                                 <div>
                                     <label className="block text-xs font-bold text-gray-300 mb-1.5 uppercase tracking-wide">
-                                        Bước 1: Tìm địa chỉ nhà <span className="text-red-500">*</span>
+                                        Địa chỉ nhà <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative group/input">
                                         <input
@@ -187,17 +247,23 @@ const AdvancedCalculator: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* 2. Monthly Bill */}
+                                {/* 3. Monthly Bill */}
                                 <div>
                                     <label className="block text-xs font-bold text-gray-300 mb-1.5 uppercase tracking-wide">
-                                        Bước 2: Nhập tiền điện trung bình <span className="text-red-500">*</span>
+                                        Tiền điện trung bình/tháng <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative mb-3">
                                         <input
-                                            type="number"
-                                            value={formState.monthlyBill}
-                                            onChange={(e) => setFormState({ ...formState, monthlyBill: Number(e.target.value) })}
+                                            type="text"
+                                            value={formatCurrency(formState.monthlyBill)}
+                                            onChange={(e) => {
+                                                const parsed = parseCurrency(e.target.value);
+                                                if (!isNaN(parsed)) {
+                                                    setFormState({ ...formState, monthlyBill: parsed });
+                                                }
+                                            }}
                                             className="w-full pl-4 pr-12 py-3 bg-slate-800/60 text-white font-semibold text-base rounded-xl border border-slate-400/20 focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20 transition-all outline-none shadow-inner"
+                                            placeholder="3,000,000"
                                         />
                                         <span className="absolute right-4 top-3.5 text-gray-500 font-bold text-sm">VNĐ</span>
                                     </div>

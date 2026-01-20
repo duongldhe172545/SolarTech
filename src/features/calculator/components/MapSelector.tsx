@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polygon, useMapEvents, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import type { AddressResult, Coordinates } from '../types';
-import { MousePointerClick, RefreshCw, Undo2, CheckCircle, Move, MapPin, Maximize, Ruler, Zap, ScanLine, ArrowRight } from 'lucide-react';
-import { calculatePolygonArea, calculatePolygonPerimeter } from '../services/calculations';
+import { MousePointerClick, RefreshCw, Undo2, CheckCircle, Move, MapPin, Maximize, Ruler, Zap, ScanLine, ArrowRight, Layers } from 'lucide-react';
+import { calculatePolygonArea, calculatePolygonPerimeter, calculateDistance } from '../services/calculations';
 import 'leaflet/dist/leaflet.css';
 
 interface MapSelectorProps {
@@ -45,6 +45,50 @@ const MapRecenter = ({ center }: { center: Coordinates }) => {
         setTimeout(() => map.invalidateSize(), 500);
     }, [center, map]);
     return null;
+};
+
+const EdgeMeasurements = ({
+    points,
+    closed, // Whether the polygon is fully closed/confirmed
+}: {
+    points: Coordinates[];
+    closed: boolean;
+}) => {
+    if (points.length < 2) return null;
+
+    const markers: React.ReactNode[] = [];
+
+    // Iterate through segments
+    // If closed (or enough points to form a polygon), we measure all segments including the closing one
+    const shouldClose = closed || points.length > 2;
+    const count = shouldClose ? points.length : points.length - 1;
+
+    for (let i = 0; i < count; i++) {
+        const p1 = points[i];
+        const p2 = points[(i + 1) % points.length];
+
+        const dist = calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng);
+        const centerLat = (p1.lat + p2.lat) / 2;
+        const centerLng = (p1.lng + p2.lng) / 2;
+
+        markers.push(
+            <Marker
+                key={`edge-${i}`}
+                position={[centerLat, centerLng]}
+                icon={L.divIcon({
+                    className: 'bg-transparent',
+                    html: `
+              <div class="px-2 py-0.5 bg-slate-900/80 backdrop-blur-sm rounded text-[10px] font-bold text-white shadow-sm border border-slate-600/50 whitespace-nowrap transform -translate-x-1/2 -translate-y-1/2">
+                ${dist.toFixed(1)}m
+              </div>
+            `,
+                    // iconSize: [40, 20],
+                })}
+            />
+        );
+    }
+
+    return <>{markers}</>;
 };
 
 // Draggable Marker for Polygon Vertices
@@ -107,6 +151,7 @@ const MapSelector: React.FC<MapSelectorProps> = ({ initialCenter, address, onAre
     // State
     const [points, setPoints] = useState<Coordinates[]>([]);
     const [isDrawing, setIsDrawing] = useState(true);
+    const [showLabels, setShowLabels] = useState(true);
     const [metrics, setMetrics] = useState({ area: 0, perimeter: 0, power: 0 });
 
     // Safe initialization
@@ -217,8 +262,11 @@ const MapSelector: React.FC<MapSelectorProps> = ({ initialCenter, address, onAre
                     style={{ background: '#0f172a', height: '100%', width: '100%' }}
                 >
                     <TileLayer
-                        attribution='&copy; Esri'
-                        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                        attribution='&copy; Google Maps'
+                        url={showLabels
+                            ? "http://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}" // Hybrid (Satellite + Labels)
+                            : "http://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}" // Satellite only
+                        }
                         maxZoom={22}
                     />
 
@@ -251,6 +299,8 @@ const MapSelector: React.FC<MapSelectorProps> = ({ initialCenter, address, onAre
                                     onDrag={handleDragVertex}
                                 />
                             ))}
+
+                            <EdgeMeasurements points={points} closed={!isDrawing && isPolygonClosed} />
                         </>
                     )}
                 </MapContainer>
@@ -264,6 +314,14 @@ const MapSelector: React.FC<MapSelectorProps> = ({ initialCenter, address, onAre
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider ${isDrawing ? 'bg-blue-600/20 text-blue-400' : 'text-gray-500'}`}>
                         <Ruler className="w-3.5 h-3.5" /> Chế độ đo đạc
                     </div>
+                    <div className="w-[1px] h-4 bg-slate-700 mx-1"></div>
+                    <button
+                        onClick={() => setShowLabels(!showLabels)}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-2 ${showLabels ? 'text-blue-400 bg-blue-600/10' : 'text-slate-300 hover:bg-white/10'}`}
+                        title={showLabels ? "Tắt nhãn địa điểm" : "Bật nhãn địa điểm"}
+                    >
+                        <Layers className="w-3.5 h-3.5" /> {showLabels ? "Ẩn nhãn" : "Hiện nhãn"}
+                    </button>
                     <div className="w-[1px] h-4 bg-slate-700 mx-1"></div>
                     <button
                         onClick={handleReset}

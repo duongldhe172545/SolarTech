@@ -41,7 +41,15 @@ export function calculatePolygonArea(coords: Coordinates[]): number {
  * @param lng2 - Longitude of point 2
  * @returns Distance in meters
  */
-function getDistanceFromLatLonInM(
+/**
+ * Calculate distance between two points using Haversine formula
+ * @param lat1 - Latitude of point 1
+ * @param lng1 - Longitude of point 1
+ * @param lat2 - Latitude of point 2
+ * @param lng2 - Longitude of point 2
+ * @returns Distance in meters
+ */
+export function calculateDistance(
     lat1: number,
     lng1: number,
     lat2: number,
@@ -73,7 +81,7 @@ export function calculatePolygonPerimeter(coords: Coordinates[]): number {
     let perimeter = 0;
     for (let i = 0; i < coords.length; i++) {
         const j = (i + 1) % coords.length;
-        perimeter += getDistanceFromLatLonInM(
+        perimeter += calculateDistance(
             coords[i].lat,
             coords[i].lng,
             coords[j].lat,
