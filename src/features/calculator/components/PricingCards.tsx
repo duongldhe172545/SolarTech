@@ -1,217 +1,299 @@
 import React from 'react';
-import type { Quotation } from '../types';
-import { Check, Award, AlertTriangle, LayoutGrid } from 'lucide-react';
+import type { SolarData } from '../types';
+import { Check, Award, Battery, Zap, DollarSign } from 'lucide-react';
+import { PRICING, type PackageId } from '../constants/pricing.constants';
 
 interface PricingCardsProps {
     area: number;
     monthlyBill: number;
-    solarData: { ghi: number };
+    solarData: SolarData;
+    usageHours: number;
 }
 
-const PricingCards: React.FC<PricingCardsProps> = ({ area, monthlyBill, solarData }) => {
+const PricingCards: React.FC<PricingCardsProps> = ({ area, monthlyBill, solarData, usageHours }) => {
+    const ELECTRICITY_PRICE_AVG = PRICING.ELECTRICITY_PRICE_AVG;
+    const EFFICIENCY = PRICING.EFFICIENCY;
+    const MAX_KWP_FOR_ROOF = area / PRICING.SQM_PER_KWP;
 
-    // Constants
-    const ELECTRICITY_PRICE_AVG = 2800; // VND/kWh
-    const PRICE_PER_KWP = 15000000;
-    const PERFORMANCE_RATIO = 0.75;
-    const MAX_KWP_FOR_ROOF = area / 6;
-    const yieldPerKwp = solarData.ghi * PERFORMANCE_RATIO;
-
+    // Calculate needed system size based on monthly bill
     const monthlyKwhNeeded = monthlyBill / ELECTRICITY_PRICE_AVG;
     const annualKwhNeeded = monthlyKwhNeeded * 12;
-    const neededSystemSize = annualKwhNeeded / yieldPerKwp;
+    const dailyKwhNeeded = annualKwhNeeded / 365;
+    const neededSystemSize = dailyKwhNeeded / (solarData.averageSunHours * EFFICIENCY);
 
-    const createPackage = (name: string, kwp: number, type: Quotation['packageType'], features: { text: string, tooltip: string }[]) => {
-        const annualGeneration = kwp * yieldPerKwp;
-        const monthlySavings = (annualGeneration / 12) * ELECTRICITY_PRICE_AVG;
-        const systemCost = kwp * PRICE_PER_KWP;
-        const roi = systemCost / (monthlySavings * 12);
+    // Debug logging
+    console.log('🔍 === CALCULATION DEBUG ===');
+    console.log('💰 Monthly Bill:', monthlyBill.toLocaleString('vi-VN'), 'VNĐ');
+    console.log('⚡ Monthly kWh needed:', monthlyKwhNeeded.toFixed(2), 'kWh');
+    console.log('📅 Annual kWh needed:', annualKwhNeeded.toFixed(2), 'kWh');
+    console.log('☀️ Daily kWh needed:', dailyKwhNeeded.toFixed(2), 'kWh');
+    console.log('🏠 Average Sun Hours:', solarData.averageSunHours, 'h/day');
+    console.log('📊 Needed System Size:', neededSystemSize.toFixed(2), 'kWp');
+    console.log('=========================');
+
+
+    // Create package calculation function
+    const calculatePackage = (packageId: PackageId) => {
+        const pkg = PRICING.PACKAGES[packageId];
+
+        const dailyGeneration = pkg.kwp * solarData.averageSunHours * EFFICIENCY;
+        const usageFactor = pkg.type === 'ongrid' ? (usageHours / 100) : 1.0;
+        const dailySavings = dailyGeneration * usageFactor * ELECTRICITY_PRICE_AVG;
+        const monthlySavings = dailySavings * 30;
+        const yearlySavings = monthlySavings * 12;
+        const roi = pkg.priceFinal / yearlySavings;
+        const fitsRoof = pkg.kwp <= MAX_KWP_FOR_ROOF;
 
         return {
-            name,
-            kwp: Math.round(kwp * 10) / 10,
-            price: systemCost,
+            ...pkg,
+            dailySavings: Math.round(dailySavings),
             monthlySavings: Math.round(monthlySavings),
             roi: Math.round(roi * 10) / 10,
-            type,
-            features,
-            fitsRoof: kwp <= MAX_KWP_FOR_ROOF
+            fitsRoof,
+            dailyGeneration: Math.round(dailyGeneration * 10) / 10
         };
     };
 
-    const packages = [
-        createPackage('Gói Tiết Kiệm', 3, 'SAVER', [
-            { text: 'Inverter hòa lưới cơ bản', tooltip: 'Thiết bị chuyển đổi điện DC sang AC, tự động hòa lưới điện quốc gia.' },
-            { text: 'Tấm pin Tier 1 (450W)', tooltip: 'Top 10 nhà sản xuất pin lớn nhất thế giới, hiệu suất >20%.' },
-            { text: 'Bảo hành 5 năm', tooltip: 'Bảo hành vật lý cho toàn bộ hệ thống.' },
-            { text: 'Phù hợp gia đình nhỏ', tooltip: 'Dành cho hóa đơn điện < 1.5 triệu/tháng.' }
-        ]),
-        createPackage('Gói Phổ Thông', 5, 'STANDARD', [
-            { text: 'Inverter thông minh (Wifi)', tooltip: 'Theo dõi sản lượng điện qua ứng dụng điện thoại mọi lúc mọi nơi.' },
-            { text: 'Tấm pin Mono Perc (550W)', tooltip: 'Công nghệ tế bào quang điện mới nhất, hoạt động tốt khi trời râm.' },
-            { text: 'Bảo hành 10 năm', tooltip: 'Cam kết chất lượng dài hạn cho thiết bị chính.' },
-            { text: 'Tối ưu cho gia đình 4-5 người', tooltip: 'Dành cho hóa đơn điện 2 - 4 triệu/tháng.' }
-        ]),
-        createPackage('Gói Cao Cấp', 10, 'PREMIUM', [
-            { text: 'Inverter Hybrid cao cấp', tooltip: 'Có khả năng kết hợp pin lưu trữ, hoạt động khi mất điện lưới.' },
-            { text: 'Tấm pin Bifacial 2 mặt', tooltip: 'Hấp thụ ánh sáng từ cả mặt sau, tăng 15% sản lượng.' },
-            { text: 'Bảo hành 12-25 năm', tooltip: 'Bảo hành hiệu suất tấm pin lên đến 25 năm.' },
-            { text: 'Dành cho biệt thự/kinh doanh', tooltip: 'Dành cho hóa đơn điện > 5 triệu/tháng.' }
-        ]),
-    ];
+    // Calculate all packages
+    const packages = Object.keys(PRICING.PACKAGES).map(id => calculatePackage(id as PackageId));
 
-    const maxSavings = Math.max(...packages.map(p => p.monthlySavings));
+    // Find best fit package - IMPROVED LOGIC
+    const getBestFit = () => {
+        const preferHybrid = usageHours < 70;
+
+        console.log('🎯 === PACKAGE MATCHING ===');
+        console.log('Prefer Hybrid?', preferHybrid, '(usageHours:', usageHours + '%)');
+
+        // Dynamic threshold: scale with system size
+        const absoluteThreshold = 2.5; // kWp
+        const percentageThreshold = 0.3; // 30%
+        const threshold = Math.max(absoluteThreshold, neededSystemSize * percentageThreshold);
+
+        console.log('📏 Threshold:', threshold.toFixed(2), 'kWp');
+
+        // Try perfect match
+        const perfectMatch = packages.find(pkg => {
+            const diff = Math.abs(pkg.kwp - neededSystemSize);
+            const sizeMatch = diff < threshold;
+            const typeMatch = preferHybrid ? pkg.type === 'hybrid' : true;
+            const result = pkg.fitsRoof && sizeMatch && typeMatch;
+
+            console.log(`  ${pkg.id}: diff=${diff.toFixed(2)}, match=${result ? '✅' : '❌'}`);
+            return result;
+        });
+
+        if (perfectMatch) {
+            console.log('✅ Perfect match:', perfectMatch.id);
+            return perfectMatch;
+        }
+
+        // Fallback: ignore type preference
+        const sizeOnly = packages.find(pkg => pkg.fitsRoof && Math.abs(pkg.kwp - neededSystemSize) < threshold);
+        if (sizeOnly) {
+            console.log('⚠️ Size-only match:', sizeOnly.id);
+            return sizeOnly;
+        }
+
+        // Final fallback based on need size
+        const fitting = packages.filter(p => p.fitsRoof).sort((a, b) => a.kwp - b.kwp);
+
+        // If NO packages fit the roof, return smallest available
+        if (fitting.length === 0) {
+            const smallest = packages.sort((a, b) => a.kwp - b.kwp)[0];
+            console.log('⚠️ NO packages fit roof! Returning smallest:', smallest?.id);
+            console.log('=======================');
+            return smallest;
+        }
+
+        const max = fitting[fitting.length - 1];
+        const min = fitting[0];
+
+        let final;
+        if (neededSystemSize > max.kwp) {
+            final = max; // Need more → largest
+            console.log('❗ Need > max → Largest:', final.id);
+        } else if (neededSystemSize < min.kwp) {
+            final = min; // Need less → smallest  
+            console.log('❗ Need < min → Smallest:', final.id);
+        } else {
+            // Closest
+            final = fitting.reduce((closest, pkg) =>
+                Math.abs(pkg.kwp - neededSystemSize) < Math.abs(closest.kwp - neededSystemSize) ? pkg : closest
+            );
+            console.log('❗ Closest:', final.id);
+        }
+
+        console.log('=======================');
+        return final;
+    };
+
+    // Get alternative packages
+    const getAlternatives = (recommended: typeof packages[0] | undefined) => {
+        if (!recommended) return [];
+
+        const filtered = packages
+            .filter(p => p.id !== recommended.id && p.fitsRoof)
+            .sort((a, b) => Math.abs(a.kwp - recommended.kwp) - Math.abs(b.kwp - recommended.kwp));
+
+        const smaller = filtered.find(p => p.kwp < recommended.kwp);
+        const larger = filtered.find(p => p.kwp > recommended.kwp);
+
+        return [smaller, larger].filter((p): p is NonNullable<typeof p> => p !== undefined).slice(0, 2);
+    };
+
+    const recommendedPkg = getBestFit();
+    const alternatives = recommendedPkg ? getAlternatives(recommendedPkg) : [];
     const formatMoney = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
-    // Helper component for visualization
-    const PanelVisualizer = ({ kwp }: { kwp: number }) => {
-        // Approx 500W per panel for visualization
-        const panelCount = Math.ceil(kwp * 2);
+    // Debug logging
+    console.log('⭐ Recommended Package:', recommendedPkg?.id, '-', recommendedPkg?.kwp, 'kWp');
+    console.log('📦 Alternatives:', alternatives.map(p => p?.id).join(', '));
 
+    if (!recommendedPkg) {
         return (
-            <div className="w-full bg-slate-50 rounded-xl border border-slate-100 p-3 mb-4">
-                <div className="flex items-center gap-1.5 mb-2 text-[10px] text-slate-400 uppercase font-bold tracking-wider">
-                    <LayoutGrid className="w-3 h-3" />
-                    Mô phỏng lắp đặt ({panelCount} tấm)
-                </div>
-                <div className="flex flex-wrap gap-1 justify-center">
-                    {Array.from({ length: panelCount }).map((_, i) => (
-                        <div key={i} className="w-6 h-8 bg-blue-900 border-b-2 border-blue-600 rounded-[1px] relative shadow-sm overflow-hidden group/panel transition-transform hover:scale-110 duration-300" title="Tấm pin năng lượng mặt trời">
-                            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent"></div>
-                            {/* Grid lines */}
-                            <div className="w-full h-full grid grid-cols-2 grid-rows-3 opacity-30">
-                                <div className="border-r border-b border-white/50"></div>
-                                <div className="border-b border-white/50"></div>
-                                <div className="border-r border-b border-white/50"></div>
-                                <div className="border-b border-white/50"></div>
-                                <div className="border-r border-white/50"></div>
-                                <div className=""></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <div className="text-center mt-2 text-[10px] text-slate-400">
-                    Diện tích cần: ~{Math.round(kwp * 6)} m²
-                </div>
+            <div className="text-center py-16">
+                <p className="text-gray-400">Không tìm thấy gói phù hợp với diện tích mái nhà của bạn.</p>
             </div>
         );
-    };
+    }
 
     return (
         <div className="w-full py-8">
-            <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold text-gray-100 mb-2">Đề Xuất Hệ Thống</h2>
-                <div className="h-1 w-20 bg-amber-500 mx-auto rounded-full mb-4"></div>
-                <p className="text-gray-400">
-                    Dựa trên diện tích mái <span className="font-bold text-amber-500">{Math.round(area)} m²</span> và tiềm năng bức xạ tại khu vực của bạn.
-                </p>
-            </div>
+            {/* Recommended Package - Large Card */}
+            <div className="mb-12">
+                <div className="text-center mb-8">
+                    <h2 className="text-3xl font-bold text-gray-100 mb-2">Gói Được Đề Xuất Cho Bạn</h2>
+                    <div className="h-1 w-20 bg-amber-500 mx-auto rounded-full mb-4"></div>
+                    <p className="text-gray-400">
+                        Dựa trên diện tích mái <span className="font-bold text-amber-500">{Math.round(area)} m²</span> và nhu cầu điện năng của bạn
+                    </p>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
-                {packages.map((pkg, idx) => {
-                    const isBillMatch = Math.abs(pkg.kwp - neededSystemSize) < 2.5;
-                    const isBestFit = isBillMatch && pkg.fitsRoof;
-                    const savingsPercentage = Math.min((pkg.monthlySavings / maxSavings) * 100, 100);
-
-                    return (
-                        <div
-                            key={idx}
-                            className={`relative bg-white rounded-2xl shadow-xl overflow-hidden border transition-all duration-300 flex flex-col
-                    ${isBestFit ? 'border-amber-500 ring-4 ring-amber-500/20 scale-105 z-10 shadow-2xl' : 'border-gray-200'}
-                    ${!pkg.fitsRoof ? 'opacity-75 grayscale-[0.5]' : 'hover:-translate-y-2 hover:shadow-2xl'}
-                `}
-                        >
-                            {isBestFit && (
-                                <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg flex items-center gap-1 shadow-md">
-                                    <Award className="w-3 h-3" /> KHUYÊN DÙNG
-                                </div>
-                            )}
-
-                            {!pkg.fitsRoof && (
-                                <div className="absolute top-0 left-0 bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-br-lg flex items-center gap-1">
-                                    <AlertTriangle className="w-3 h-3" /> Diện tích mái không đủ
-                                </div>
-                            )}
-
-                            <div className={`p-6 ${pkg.type === 'PREMIUM' ? 'bg-gradient-to-b from-amber-50 to-white' : ''} flex flex-col h-full`}>
-                                <div className="mb-4">
-                                    <span className={`text-xs font-bold px-2 py-1 rounded border ${pkg.type === 'PREMIUM' ? 'border-amber-200 text-amber-600 bg-amber-50' : 'border-gray-200 text-gray-500'}`}>
-                                        {pkg.type === 'SAVER' ? 'CƠ BẢN' : pkg.type === 'STANDARD' ? 'PHỔ THÔNG' : 'CAO CẤP'}
-                                    </span>
-                                </div>
-
-                                <h3 className="text-xl font-bold text-gray-800 mb-1">{pkg.name}</h3>
-                                <div className="flex items-end gap-1 mb-4">
-                                    <span className="text-5xl font-extrabold text-gray-900 tracking-tighter">{pkg.kwp}</span>
-                                    <span className="text-lg font-bold text-gray-400 mb-1">kWp</span>
-                                </div>
-
-                                {/* Visualizer */}
-                                <PanelVisualizer kwp={pkg.kwp} />
-
-                                <div className="space-y-4 mb-6">
-                                    <div className="flex justify-between items-center border-b border-gray-100 pb-3 border-dashed">
-                                        <span className="text-gray-500 text-sm font-medium">Chi phí đầu tư</span>
-                                        <span className="font-bold text-gray-900 text-lg">{formatMoney(pkg.price)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center border-b border-gray-100 pb-3 border-dashed">
-                                        <span className="text-gray-500 text-sm font-medium">Tiết kiệm/tháng</span>
-                                        <span className="font-bold text-emerald-600">~{formatMoney(pkg.monthlySavings)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center pb-2">
-                                        <span className="text-gray-500 text-sm font-medium">Hoàn vốn (ROI)</span>
-                                        <span className="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">{pkg.roi} năm</span>
-                                    </div>
-                                </div>
-
-                                <ul className="space-y-3 mb-8 flex-grow">
-                                    {pkg.features.map((feat, i) => (
-                                        <li key={i} className="flex items-start gap-3 text-sm text-gray-600 group relative cursor-help">
-                                            <div className="mt-0.5 p-0.5 bg-emerald-100 rounded-full shrink-0">
-                                                <Check className="w-3 h-3 text-emerald-600" />
-                                            </div>
-                                            <span className="border-b border-dashed border-gray-300 hover:border-emerald-500 transition-colors">
-                                                {feat.text}
-                                            </span>
-                                            {/* Tooltip */}
-                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 pointer-events-none text-center">
-                                                {feat.tooltip}
-                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-
-                                {/* Savings Bar Chart */}
-                                <div className="mb-6">
-                                    <div className="flex items-center justify-between gap-1 mb-2">
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Hiệu quả kinh tế</span>
-                                        <span className="text-xs font-bold text-amber-600">{Math.round(savingsPercentage)}%</span>
-                                    </div>
-                                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                                        <div
-                                            className={`h-full rounded-full transition-all duration-1000 ease-out ${!pkg.fitsRoof ? 'bg-gray-400' : 'bg-gradient-to-r from-emerald-400 to-emerald-500'}`}
-                                            style={{ width: `${savingsPercentage}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-
-                                <button
-                                    disabled={!pkg.fitsRoof}
-                                    className={`w-full py-3.5 rounded-xl font-bold transition-all mt-auto shadow-lg
-                    ${!pkg.fitsRoof
-                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
-                                            : isBestFit
-                                                ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:shadow-orange-500/30 hover:scale-[1.02]'
-                                                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'}
-                `}>
-                                    {!pkg.fitsRoof ? 'Diện tích mái không đủ' : 'Chọn gói này'}
-                                </button>
-                            </div>
+                <div className="max-w-2xl mx-auto">
+                    <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border-4 border-amber-500 transform hover:-translate-y-1 transition-all">
+                        {/* Badge */}
+                        <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-orange-500 text-white text-sm font-bold px-6 py-2 rounded-bl-2xl flex items-center gap-2 shadow-lg z-10">
+                            <Award className="w-5 h-5" /> KHUYÊN DÙNG
                         </div>
-                    );
-                })}
+
+                        <div className="p-8 bg-gradient-to-br from-amber-50 to-white">
+                            {/* Package Type Badge */}
+                            <div className="mb-6 flex items-center gap-3">
+                                <span className={`text-sm font-bold px-4 py-2 rounded-lg border-2 ${recommendedPkg.type === 'hybrid' ? 'border-blue-500 text-blue-700 bg-blue-50' : 'border-gray-400 text-gray-700 bg-gray-50'}`}>
+                                    {recommendedPkg.type === 'hybrid' ? (
+                                        <span className="flex items-center gap-2">
+                                            <Battery className="w-4 h-4" /> HYBRID - CÓ LƯU TRỮ
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center gap-2">
+                                            <Zap className="w-4 h-4" /> ONGRID - HÒA LƯỚI
+                                        </span>
+                                    )}
+                                </span>
+                                {recommendedPkg.batteryCapacity > 0 && (
+                                    <span className="text-sm font-bold text-blue-700 bg-blue-100 px-3 py-1 rounded-lg">
+                                        Pin {recommendedPkg.batteryCapacity}kWh
+                                    </span>
+                                )}
+                            </div>
+
+                            <h3 className="text-2xl font-bold text-gray-800 mb-2">{recommendedPkg.name}</h3>
+                            <div className="flex items-end gap-2 mb-6">
+                                <span className="text-6xl font-extrabold text-gray-900">{recommendedPkg.kwp}</span>
+                                <span className="text-2xl font-bold text-gray-400 mb-2">kWp</span>
+                            </div>
+
+                            {/* Key Metrics */}
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="bg-white p-4 rounded-xl border border-gray-200">
+                                    <div className="text-sm text-gray-500 mb-1">Chi phí đầu tư</div>
+                                    <div className="text-2xl font-bold text-gray-900">{formatMoney(recommendedPkg.priceFinal)}</div>
+                                </div>
+                                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                                    <div className="text-sm text-emerald-700 mb-1">Tiết kiệm/tháng</div>
+                                    <div className="text-2xl font-bold text-emerald-700">{formatMoney(recommendedPkg.monthlySavings)}</div>
+                                </div>
+                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                                    <div className="text-sm text-blue-700 mb-1">Tiết kiệm/ngày</div>
+                                    <div className="text-2xl font-bold text-blue-700">{formatMoney(recommendedPkg.dailySavings)}</div>
+                                </div>
+                                <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
+                                    <div className="text-sm text-amber-700 mb-1">Hoàn vốn (ROI)</div>
+                                    <div className="text-2xl font-bold text-amber-700">{recommendedPkg.roi} năm</div>
+                                </div>
+                            </div>
+
+                            {/* Features */}
+                            <ul className="space-y-3 mb-8">
+                                {recommendedPkg.features.map((feat, i) => (
+                                    <li key={i} className="flex items-start gap-3 text-gray-700">
+                                        <div className="mt-1 p-1 bg-emerald-100 rounded-full shrink-0">
+                                            <Check className="w-4 h-4 text-emerald-600" />
+                                        </div>
+                                        <span className="font-medium">{feat.text}</span>
+                                    </li>
+                                ))}
+                            </ul>
+
+                            {/* CTA Button */}
+                            <button className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-lg font-bold rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2">
+                                <DollarSign className="w-6 h-6" />
+                                Chọn Gói Này Ngay
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            {/* Alternative Packages */}
+            {alternatives.length > 0 && (
+                <div>
+                    <div className="text-center mb-8">
+                        <h3 className="text-2xl font-bold text-gray-100 mb-2">Các Lựa Chọn Khác</h3>
+                        <p className="text-gray-400 text-sm">Tùy chọn thay thế phù hợp với nhu cầu của bạn</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                        {alternatives.map((pkg) => (
+                            <div key={pkg.id} className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 hover:border-gray-300 hover:shadow-xl transition-all">
+                                <div className="p-6">
+                                    <div className="mb-4">
+                                        <span className={`text-xs font-bold px-3 py-1 rounded border ${pkg.type === 'hybrid' ? 'border-blue-200 text-blue-600 bg-blue-50' : 'border-gray-200 text-gray-500'}`}>
+                                            {pkg.type === 'hybrid' ? 'HYBRID' : 'ONGRID'}
+                                            {pkg.batteryCapacity > 0 && ` - Pin ${pkg.batteryCapacity}kWh`}
+                                        </span>
+                                    </div>
+
+                                    <h4 className="text-lg font-bold text-gray-800 mb-2">{pkg.name}</h4>
+                                    <div className="flex items-end gap-1 mb-4">
+                                        <span className="text-4xl font-extrabold text-gray-900">{pkg.kwp}</span>
+                                        <span className="text-lg font-bold text-gray-400 mb-1">kWp</span>
+                                    </div>
+
+                                    <div className="space-y-2 mb-4 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Chi phí:</span>
+                                            <span className="font-bold text-gray-900">{formatMoney(pkg.priceFinal)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Tiết kiệm/tháng:</span>
+                                            <span className="font-bold text-emerald-600">{formatMoney(pkg.monthlySavings)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">ROI:</span>
+                                            <span className="font-bold text-amber-600">{pkg.roi} năm</span>
+                                        </div>
+                                    </div>
+
+                                    <button className="w-full py-3 bg-white border-2 border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all">
+                                        Xem Chi Tiết
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

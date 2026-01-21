@@ -386,12 +386,16 @@ const AdvancedCalculator: React.FC = () => {
                     <div className="container mx-auto px-4">
 
                         {/* Solar Potential Dashboard */}
-                        <ResultsDashboard solarData={solarData} roofArea={roofArea} />
+                        <ResultsDashboard
+                            solarData={solarData}
+                            roofArea={roofArea}
+                        />
 
                         <PricingCards
                             area={roofArea}
                             monthlyBill={formState.monthlyBill}
                             solarData={solarData}
+                            usageHours={formState.usageHours}
                         />
                     </div>
                 </section>

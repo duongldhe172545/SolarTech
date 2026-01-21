@@ -15,11 +15,17 @@ export interface SolarData {
 }
 
 export interface Quotation {
+    packageId: string;
+    name: string;
     systemSizeKw: number;
-    estimatedPrice: number;
+    systemType: 'ongrid' | 'hybrid';
+    batteryCapacity: number;
+    priceOriginal: number;
+    priceFinal: number;
+    dailySavings: number;
     monthlySavings: number;
     roiYears: number;
-    packageType: 'SAVER' | 'STANDARD' | 'PREMIUM';
+    features: Array<{ text: string; tooltip: string }>;
 }
 
 export interface CalculatorState {

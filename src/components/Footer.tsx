@@ -6,7 +6,7 @@ export default function Footer() {
     <footer className="bg-black/80 border-t border-white/10 pt-16 pb-8 backdrop-blur-md relative overflow-hidden">
       {/* Footer Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-primary to-transparent" />
-      
+
       <div className="container mx-auto px-4 relative z-10">
         <div className="grid md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-2">
@@ -15,7 +15,7 @@ export default function Footer() {
               SOLAR<span className="text-primary">TECH</span>
             </div>
             <p className="text-muted-foreground max-w-md mb-8">
-              Đơn vị tiên phong cung cấp giải pháp điện năng lượng mặt trời thông minh. 
+              Đơn vị tiên phong cung cấp giải pháp điện năng lượng mặt trời thông minh.
               Tích hợp công nghệ AI giám sát và tối ưu hóa hiệu suất.
             </p>
             <div className="flex gap-4">
@@ -34,11 +34,11 @@ export default function Footer() {
           <div>
             <h3 className="text-foreground font-bold uppercase mb-6 tracking-wider border-b border-primary/30 inline-block pb-1">Liên kết</h3>
             <ul className="space-y-4 text-muted-foreground">
-              <li><a href="#hero" className="hover:text-primary transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full opacity-0 hover:opacity-100 transition-opacity"/> Trang chủ</a></li>
-              <li><a href="#benefits" className="hover:text-primary transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full opacity-0 hover:opacity-100 transition-opacity"/> Lợi ích</a></li>
-              <li><a href="#projects" className="hover:text-primary transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full opacity-0 hover:opacity-100 transition-opacity"/> Dự án</a></li>
-              <li><a href="#products" className="hover:text-primary transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full opacity-0 hover:opacity-100 transition-opacity"/> Sản phẩm</a></li>
-              <li><a href="#roi" className="hover:text-primary transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full opacity-0 hover:opacity-100 transition-opacity"/> Bài toán hoàn vốn</a></li>
+              <li><a href="#hero" className="hover:text-primary transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full opacity-0 hover:opacity-100 transition-opacity" /> Trang chủ</a></li>
+              <li><a href="#benefits" className="hover:text-primary transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full opacity-0 hover:opacity-100 transition-opacity" /> Lợi ích</a></li>
+              <li><a href="#projects" className="hover:text-primary transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full opacity-0 hover:opacity-100 transition-opacity" /> Dự án</a></li>
+              <li><a href="#products" className="hover:text-primary transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full opacity-0 hover:opacity-100 transition-opacity" /> Sản phẩm</a></li>
+              <li><a href="#roi" className="hover:text-primary transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full opacity-0 hover:opacity-100 transition-opacity" /> Bài toán hoàn vốn</a></li>
             </ul>
           </div>
 
@@ -67,10 +67,8 @@ export default function Footer() {
             <a href="#" className="hover:text-primary transition-colors">Chính sách bảo mật</a>
             <a href="#" className="hover:text-primary transition-colors">Điều khoản sử dụng</a>
             <div className="w-px h-4 bg-white/20 mx-2"></div>
-            <Link href="/admin">
-               <a className="flex items-center gap-2 hover:text-primary transition-colors text-xs uppercase tracking-wide opacity-50 hover:opacity-100">
-                  <Lock className="h-3 w-3" /> Admin Portal
-               </a>
+            <Link href="/admin" className="flex items-center gap-2 hover:text-primary transition-colors text-xs uppercase tracking-wide opacity-50 hover:opacity-100">
+              <Lock className="h-3 w-3" /> Admin Portal
             </Link>
           </div>
         </div>
