@@ -35,3 +35,12 @@ export interface CalculatorState {
     phase: string;
     battery: string;
 }
+
+export interface SatelliteLayer {
+    id: string;
+    name: string;
+    url: string;
+    attribution: string;
+    maxZoom: number;
+    description?: string;
+}

@@ -1,10 +1,48 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polygon, useMapEvents, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
-import type { AddressResult, Coordinates } from '../types';
+import type { AddressResult, Coordinates, SatelliteLayer } from '../types';
 import { MousePointerClick, RefreshCw, Undo2, CheckCircle, Move, MapPin, Maximize, Ruler, Zap, ScanLine, ArrowRight, Layers } from 'lucide-react';
 import { calculatePolygonArea, calculatePolygonPerimeter, calculateDistance } from '../services/calculations';
 import 'leaflet/dist/leaflet.css';
+
+// --- SATELLITE LAYER CONFIGURATIONS ---
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw'; // Fallback to Mapbox demo token
+
+const SATELLITE_LAYERS: SatelliteLayer[] = [
+    {
+        id: 'mapbox',
+        name: 'Mapbox Satellite',
+        url: `https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.png?access_token=${MAPBOX_TOKEN}`,
+        attribution: '© Mapbox © Maxar',
+        maxZoom: 23,
+        description: 'Độ phân giải cao, cập nhật thường xuyên'
+    },
+    {
+        id: 'google-hybrid',
+        name: 'Google Hybrid',
+        url: 'http://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}',
+        attribution: '© Google Maps',
+        maxZoom: 22,
+        description: 'Vệ tinh + nhãn địa điểm'
+    },
+    {
+        id: 'google-satellite',
+        name: 'Google Satellite',
+        url: 'http://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}',
+        attribution: '© Google Maps',
+        maxZoom: 22,
+        description: 'Chỉ ảnh vệ tinh'
+    },
+    {
+        id: 'esri',
+        name: 'Esri World Imagery',
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attribution: '© Esri © Maxar © GeoEye',
+        maxZoom: 23,
+        description: 'Dữ liệu từ nhiều vệ tinh'
+    }
+];
 
 interface MapSelectorProps {
     initialCenter: Coordinates;
@@ -151,8 +189,8 @@ const MapSelector: React.FC<MapSelectorProps> = ({ initialCenter, address, onAre
     // State
     const [points, setPoints] = useState<Coordinates[]>([]);
     const [isDrawing, setIsDrawing] = useState(true);
-    const [showLabels, setShowLabels] = useState(true);
     const [metrics, setMetrics] = useState({ area: 0, perimeter: 0, power: 0 });
+    const [selectedLayer, setSelectedLayer] = useState<SatelliteLayer>(SATELLITE_LAYERS[0]); // Default to Mapbox
 
     // Safe initialization
     const [center, setCenter] = useState<Coordinates>(() => {
@@ -262,12 +300,10 @@ const MapSelector: React.FC<MapSelectorProps> = ({ initialCenter, address, onAre
                     style={{ background: '#0f172a', height: '100%', width: '100%' }}
                 >
                     <TileLayer
-                        attribution='&copy; Google Maps'
-                        url={showLabels
-                            ? "http://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}" // Hybrid (Satellite + Labels)
-                            : "http://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}" // Satellite only
-                        }
-                        maxZoom={22}
+                        key={selectedLayer.id} // Force remount when layer changes
+                        attribution={selectedLayer.attribution}
+                        url={selectedLayer.url}
+                        maxZoom={selectedLayer.maxZoom}
                     />
 
                     <MapRecenter center={center} />
@@ -315,13 +351,34 @@ const MapSelector: React.FC<MapSelectorProps> = ({ initialCenter, address, onAre
                         <Ruler className="w-3.5 h-3.5" /> Chế độ đo đạc
                     </div>
                     <div className="w-[1px] h-4 bg-slate-700 mx-1"></div>
-                    <button
-                        onClick={() => setShowLabels(!showLabels)}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-2 ${showLabels ? 'text-blue-400 bg-blue-600/10' : 'text-slate-300 hover:bg-white/10'}`}
-                        title={showLabels ? "Tắt nhãn địa điểm" : "Bật nhãn địa điểm"}
-                    >
-                        <Layers className="w-3.5 h-3.5" /> {showLabels ? "Ẩn nhãn" : "Hiện nhãn"}
-                    </button>
+
+                    {/* Satellite Layer Switcher */}
+                    <div className="relative group/layers">
+                        <button
+                            className="px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-2 text-blue-400 bg-blue-600/10 hover:bg-blue-600/20"
+                            title="Chọn nguồn ảnh vệ tinh"
+                        >
+                            <Layers className="w-3.5 h-3.5" /> {selectedLayer.name}
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        <div className="absolute top-full left-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-2xl opacity-0 invisible group-hover/layers:opacity-100 group-hover/layers:visible transition-all duration-200 min-w-[220px] z-50">
+                            {SATELLITE_LAYERS.map((layer) => (
+                                <button
+                                    key={layer.id}
+                                    onClick={() => setSelectedLayer(layer)}
+                                    className={`w-full px-3 py-2.5 text-left text-xs hover:bg-slate-700 transition-colors first:rounded-t-lg last:rounded-b-lg border-b border-slate-700 last:border-0 ${selectedLayer.id === layer.id ? 'bg-blue-600/20 text-blue-400' : 'text-slate-300'
+                                        }`}
+                                >
+                                    <div className="font-medium">{layer.name}</div>
+                                    {layer.description && (
+                                        <div className="text-[10px] text-slate-500 mt-0.5">{layer.description}</div>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="w-[1px] h-4 bg-slate-700 mx-1"></div>
                     <button
                         onClick={handleReset}

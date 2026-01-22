@@ -1,6 +1,7 @@
 import React from 'react';
-import { Sun, CloudSun, Maximize, CheckCircle2, Star } from 'lucide-react';
+import { Sun, CloudSun, Maximize, CheckCircle2, Star, DollarSign } from 'lucide-react';
 import type { SolarData } from '../types';
+import { PRICING } from '../constants/pricing.constants';
 
 interface ResultsDashboardProps {
     solarData: SolarData;
@@ -8,6 +9,20 @@ interface ResultsDashboardProps {
 }
 
 const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ solarData, roofArea }) => {
+    // Calculate potential financial results based on max installable capacity
+    const maxKWp = roofArea / PRICING.SQM_PER_KWP;
+    const dailyGeneration = maxKWp * solarData.averageSunHours * PRICING.EFFICIENCY;
+    const potentialDailySavings = dailyGeneration * PRICING.ELECTRICITY_PRICE_AVG;
+    const potentialMonthlySavings = potentialDailySavings * 30;
+
+    const formatMoney = (amount: number) => {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND',
+            maximumFractionDigits: 0
+        }).format(amount);
+    };
+
     return (
         <div className="mb-12 bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-8 border border-white/5 shadow-xl relative overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700">
             <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
@@ -20,7 +35,7 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ solarData, roofArea
                     Phân Tích Tiềm Năng Năng Lượng
                 </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                     {/* GHI Card */}
                     <div className="bg-slate-900/50 backdrop-blur border border-white/10 rounded-xl p-4 flex flex-col hover:border-amber-500/50 transition-colors">
                         <div className="flex items-center gap-2 mb-3 text-slate-400">
@@ -81,6 +96,24 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ solarData, roofArea
                             </div>
                         </div>
                         <p className="text-[10px] text-slate-500 mt-2">Khu vực có lượng bức xạ cao, phù hợp lắp đặt.</p>
+                    </div>
+
+                    {/* Financial Results Card - NEW */}
+                    <div className="bg-slate-900/50 backdrop-blur border border-white/10 rounded-xl p-4 flex flex-col hover:border-green-500/50 transition-colors">
+                        <div className="flex items-center gap-2 mb-3 text-slate-400">
+                            <DollarSign className="w-4 h-4 text-green-500" />
+                            <span className="text-xs font-bold uppercase tracking-wider">Tiết kiệm tối đa</span>
+                        </div>
+                        <div className="flex flex-col gap-1 mt-auto">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-2xl font-bold text-green-400">{formatMoney(potentialDailySavings)}</span>
+                            </div>
+                            <span className="text-xs text-slate-500 font-medium">mỗi ngày</span>
+                        </div>
+                        <div className="w-full h-1 bg-slate-700 mt-3 rounded-full overflow-hidden">
+                            <div className="h-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" style={{ width: '100%' }}></div>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-2">≈ {formatMoney(potentialMonthlySavings)}/tháng với {maxKWp.toFixed(1)}kWp</p>
                     </div>
                 </div>
             </div>
